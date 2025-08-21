@@ -21,35 +21,53 @@ async function generateFallbackResponse(message: string): Promise<string> {
     // Get real data
     const allData = await dataService.getAllData();
     const lobs = Object.keys(allData);
-    
+
     // Calculate current volumes and trends for each LOB
-    const lobStats: { [key: string]: { volume: number; trend: string; latestValue: number } } = {};
-    
+    const lobStats: {
+      [key: string]: { volume: number; trend: string; latestValue: number };
+    } = {};
+
     for (const lob of lobs) {
       const data = allData[lob];
       if (data.length > 0) {
         const latestValue = data[data.length - 1].value;
-        const previousValue = data.length > 1 ? data[data.length - 2].value : latestValue;
-        const trendPercent = previousValue > 0 ? ((latestValue - previousValue) / previousValue * 100).toFixed(1) : '0.0';
-        const trendDirection = latestValue > previousValue ? 'growing' : latestValue < previousValue ? 'declining' : 'stable';
-        
+        const previousValue =
+          data.length > 1 ? data[data.length - 2].value : latestValue;
+        const trendPercent =
+          previousValue > 0
+            ? (((latestValue - previousValue) / previousValue) * 100).toFixed(1)
+            : "0.0";
+        const trendDirection =
+          latestValue > previousValue
+            ? "growing"
+            : latestValue < previousValue
+              ? "declining"
+              : "stable";
+
         lobStats[lob] = {
           volume: latestValue,
           trend: `${trendDirection} (${trendPercent}%)`,
-          latestValue
+          latestValue,
         };
       }
     }
 
     // Handle forecasting requests
     if (lowerMessage.includes("forecast")) {
-      const matchedLob = lobs.find(lob => lowerMessage.includes(lob.toLowerCase()));
-      
+      const matchedLob = lobs.find((lob) =>
+        lowerMessage.includes(lob.toLowerCase()),
+      );
+
       if (matchedLob && lobStats[matchedLob]) {
         const stats = lobStats[matchedLob];
         return `📈 **${matchedLob} Forecast Analysis**\n\nBased on historical data analysis for ${matchedLob}.\n\n**Current Status:**\n• **Volume**: ${stats.latestValue.toLocaleString()} cases\n• **Trend**: ${stats.trend}\n• **Data Points**: ${allData[matchedLob].length} historical records\n\n**Forecast Available**: Use the forecast feature to generate predictions with ARIMA, Prophet, or LSTM models.\n\n*Note: To get AI-powered forecasts with advanced models, please configure your Gemini API key.*`;
       } else {
-        const lobList = lobs.map(lob => `• **${lob}** (${lobStats[lob]?.latestValue.toLocaleString() || 'N/A'} cases - ${lobStats[lob]?.trend || 'trend unknown'})`).join('\n');
+        const lobList = lobs
+          .map(
+            (lob) =>
+              `• **${lob}** (${lobStats[lob]?.latestValue.toLocaleString() || "N/A"} cases - ${lobStats[lob]?.trend || "trend unknown"})`,
+          )
+          .join("\n");
         return `🔮 **Forecasting Available**\n\nI can help analyze trends for these Lines of Business:\n\n${lobList}\n\nPlease specify which LoB you'd like me to forecast, or ask about specific trends.\n\n*For AI-powered forecasting with ARIMA, Prophet, and LSTM models, configure your Gemini API key.*`;
       }
     }
@@ -57,36 +75,45 @@ async function generateFallbackResponse(message: string): Promise<string> {
     // Handle trend analysis
     if (lowerMessage.includes("trend")) {
       const growingLobs = Object.entries(lobStats)
-        .filter(([_, stats]) => stats.trend.includes('growing'))
-        .map(([lob, stats]) => `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`)
-        .join('\n');
-      
+        .filter(([_, stats]) => stats.trend.includes("growing"))
+        .map(
+          ([lob, stats]) =>
+            `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`,
+        )
+        .join("\n");
+
       const decliningLobs = Object.entries(lobStats)
-        .filter(([_, stats]) => stats.trend.includes('declining'))
-        .map(([lob, stats]) => `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`)
-        .join('\n');
-      
+        .filter(([_, stats]) => stats.trend.includes("declining"))
+        .map(
+          ([lob, stats]) =>
+            `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`,
+        )
+        .join("\n");
+
       const stableLobs = Object.entries(lobStats)
-        .filter(([_, stats]) => stats.trend.includes('stable'))
-        .map(([lob, stats]) => `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`)
-        .join('\n');
-      
+        .filter(([_, stats]) => stats.trend.includes("stable"))
+        .map(
+          ([lob, stats]) =>
+            `• ${lob} (${stats.trend}) - ${stats.latestValue.toLocaleString()} cases`,
+        )
+        .join("\n");
+
       let trendAnalysis = `📈 **Current Trend Analysis - Historical Data**\n\n`;
-      
+
       if (growingLobs) {
         trendAnalysis += `**Growing Channels:**\n${growingLobs}\n\n`;
       }
-      
+
       if (stableLobs) {
         trendAnalysis += `**Stable Channels:**\n${stableLobs}\n\n`;
       }
-      
+
       if (decliningLobs) {
         trendAnalysis += `**Declining Channels:**\n${decliningLobs}\n\n`;
       }
-      
+
       trendAnalysis += `**Analysis based on ${lobs.length} LOBs with real historical data**`;
-      
+
       return trendAnalysis;
     }
 
@@ -106,16 +133,24 @@ async function generateFallbackResponse(message: string): Promise<string> {
 
     // Handle summaries
     if (lowerMessage.includes("summary")) {
-      const totalVolume = Object.values(allData)
-        .reduce((sum, lobData) => sum + (lobData[lobData.length - 1]?.value || 0), 0);
-      
+      const totalVolume = Object.values(allData).reduce(
+        (sum, lobData) => sum + (lobData[lobData.length - 1]?.value || 0),
+        0,
+      );
+
       const topPerformers = Object.entries(allData)
-        .map(([lob, data]) => ({ lob, volume: data[data.length - 1]?.value || 0 }))
+        .map(([lob, data]) => ({
+          lob,
+          volume: data[data.length - 1]?.value || 0,
+        }))
         .sort((a, b) => b.volume - a.volume)
         .slice(0, 3)
-        .map((item, index) => `${index + 1}. **${item.lob}** - ${item.volume.toLocaleString()} cases`)
-        .join('\n');
-      
+        .map(
+          (item, index) =>
+            `${index + 1}. **${item.lob}** - ${item.volume.toLocaleString()} cases`,
+        )
+        .join("\n");
+
       return `📋 **Data Summary - Historical Analysis**\n\n**Total Current Volume**: ${totalVolume.toLocaleString()} cases across ${lobs.length} Lines of Business\n\n**Top Performers:**\n${topPerformers}\n\n**Data Coverage**: Real historical data from Excel file\n**Available Models**: ARIMA, Prophet, LSTM forecasting\n\n**Strategic Focus**: Use forecasting models to predict future trends and optimize resource allocation.`;
     }
 
@@ -130,13 +165,13 @@ async function generateFallbackResponse(message: string): Promise<string> {
 
     // Default response
     const lobList = lobs.slice(0, 5).join('", "');
-    const moreCount = lobs.length > 5 ? ` and ${lobs.length - 5} more` : '';
-    
+    const moreCount = lobs.length > 5 ? ` and ${lobs.length - 5} more` : "";
+
     return `🤖 **ForecastGPT - Forecasting Assistant**\n\nI'm specialized in time series forecasting using your Excel historical data. I can help with:\n\n• **Generate Forecasts** for any Line of Business\n• **Analyze Trends** and patterns\n• **Compare Models** (ARIMA, Prophet, LSTM)\n• **Explain Concepts** about forecasting\n• **Provide Summaries** of your data\n\n**Available LOBs**: "${lobList}"${moreCount}\n\nTry asking:\n• "Forecast [LOB name] trends"\n• "What's trending up?"\n• "Explain Prophet model"\n• "Give me a data summary"\n\n*For advanced AI responses, configure your Gemini API key.*`;
   } catch (error) {
-    console.error('Error generating fallback response:', error);
+    console.error("Error generating fallback response:", error);
     // Fall back to basic response if data loading fails
-    return '🤖 **ForecastGPT - Forecasting Assistant**\n\nI\'m specialized in time series forecasting. Please ensure your Excel data file is available and try again.\n\n*For advanced AI responses, configure your Gemini API key.*';
+    return "🤖 **ForecastGPT - Forecasting Assistant**\n\nI'm specialized in time series forecasting. Please ensure your Excel data file is available and try again.\n\n*For advanced AI responses, configure your Gemini API key.*";
   }
 }
 
@@ -169,20 +204,22 @@ export const handleChat: RequestHandler = async (req, res) => {
       const dataService = DataService.getInstance();
       const allData = await dataService.getAllData();
       const lobs = Object.keys(allData);
-      
-      const lobDescriptions = lobs.map(lob => {
-        const data = allData[lob];
-        if (data.length > 0) {
-          const latestValue = data[data.length - 1].value;
-          const dataPoints = data.length;
-          return `• ${lob} (${latestValue.toLocaleString()} current cases, ${dataPoints} historical data points)`;
-        }
-        return `• ${lob} (data available)`;
-      }).join('\n');
-      
+
+      const lobDescriptions = lobs
+        .map((lob) => {
+          const data = allData[lob];
+          if (data.length > 0) {
+            const latestValue = data[data.length - 1].value;
+            const dataPoints = data.length;
+            return `• ${lob} (${latestValue.toLocaleString()} current cases, ${dataPoints} historical data points)`;
+          }
+          return `• ${lob} (data available)`;
+        })
+        .join("\n");
+
       dataDescription = `these Lines of Business loaded from Excel data:\n\n${lobDescriptions}`;
     } catch (error) {
-      console.error('Error loading data for system prompt:', error);
+      console.error("Error loading data for system prompt:", error);
     }
 
     // Build the system prompt for the forecasting expert

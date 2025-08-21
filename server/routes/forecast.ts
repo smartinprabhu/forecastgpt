@@ -5,12 +5,12 @@ import { ForecastingService } from "../services/forecastingService";
 
 export const handleForecast: RequestHandler = async (req, res) => {
   try {
-    const { lob, months, model = 'prophet' }: ForecastRequest = req.body;
+    const { lob, months, model = "prophet" }: ForecastRequest = req.body;
 
     if (!lob || !months) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required parameters: lob and months'
+        message: "Missing required parameters: lob and months",
       });
     }
 
@@ -22,7 +22,7 @@ export const handleForecast: RequestHandler = async (req, res) => {
     if (!availableLOBs.includes(lob)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid LOB. Available LOBs: ${availableLOBs.join(', ')}`
+        message: `Invalid LOB. Available LOBs: ${availableLOBs.join(", ")}`,
       });
     }
 
@@ -32,22 +32,24 @@ export const handleForecast: RequestHandler = async (req, res) => {
     if (historicalData.length === 0) {
       return res.status(400).json({
         success: false,
-        message: `No historical data found for LOB: ${lob}`
+        message: `No historical data found for LOB: ${lob}`,
       });
     }
 
-    console.log(`Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points`);
+    console.log(
+      `Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points`,
+    );
 
     // Generate forecast using the specified model
     const forecastResult = await ForecastingService.generateForecast(
       historicalData,
       months,
-      model
+      model,
     );
 
     // Prepare response
-    const historicalDates = historicalData.map(d => d.date);
-    const historicalValues = historicalData.map(d => d.value);
+    const historicalDates = historicalData.map((d) => d.date);
+    const historicalValues = historicalData.map((d) => d.value);
 
     const response: ForecastResponse = {
       success: true,
@@ -57,23 +59,26 @@ export const handleForecast: RequestHandler = async (req, res) => {
       dates: [...historicalDates, ...forecastResult.dates],
       historical: {
         dates: historicalDates,
-        values: historicalValues
+        values: historicalValues,
       },
       forecast: {
         dates: forecastResult.dates,
         values: forecastResult.values,
         confidenceUpper: forecastResult.confidenceUpper,
-        confidenceLower: forecastResult.confidenceLower
+        confidenceLower: forecastResult.confidenceLower,
       },
-      metrics: forecastResult.metrics
+      metrics: forecastResult.metrics,
     };
 
     res.json(response);
   } catch (error) {
-    console.error('Forecast error:', error);
+    console.error("Forecast error:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Error generating forecast. Please try again.'
+      message:
+        error instanceof Error
+          ? error.message
+          : "Error generating forecast. Please try again.",
     });
   }
 };
