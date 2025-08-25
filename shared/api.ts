@@ -11,7 +11,7 @@ export interface FileUploadResponse {
 
 export interface ForecastRequest {
   lob: string;
-  months: number;
+  weeks: number;
   model?: "arima" | "prophet" | "lstm";
 }
 
