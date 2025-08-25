@@ -37,13 +37,13 @@ export const handleForecast: RequestHandler = async (req, res) => {
     }
 
     console.log(
-      `Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points`,
+      `Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points for ${weeks} weeks`,
     );
 
     // Generate forecast using the specified model with weekly frequency
     const forecastResult = await ForecastingService.generateForecast(
       historicalData,
-      months,
+      weeks,
       model,
       "W-MON",
     );
@@ -55,7 +55,7 @@ export const handleForecast: RequestHandler = async (req, res) => {
     const response: ForecastResponse = {
       success: true,
       lob,
-      forecastPeriod: months,
+      forecastPeriod: weeks,
       model,
       dates: [...historicalDates, ...forecastResult.dates],
       historical: {
