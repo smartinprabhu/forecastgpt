@@ -110,7 +110,12 @@ export class ForecastingService {
     }
 
     // Generate past forecast (backfitted) for historical period
-    const pastForecast = this.generatePastForecast(data, trend, seasonal, residual);
+    const pastForecast = this.generatePastForecast(
+      data,
+      trend,
+      seasonal,
+      residual,
+    );
 
     // Calculate metrics using holdout validation
     const metrics = this.calculateMetrics(data, "prophet");
@@ -185,7 +190,11 @@ export class ForecastingService {
     }
 
     // Generate past forecast using ARIMA model
-    const pastForecast = this.generateARIMAPastForecast(data, { ar, ma }, differencedValues);
+    const pastForecast = this.generateARIMAPastForecast(
+      data,
+      { ar, ma },
+      differencedValues,
+    );
 
     const metrics = this.calculateMetrics(data, "arima");
 
@@ -268,7 +277,11 @@ export class ForecastingService {
     }
 
     // Generate past forecast using Holt-Winters model
-    const pastForecast = this.generateHoltWintersPastForecast(data, { level, trend, seasonal });
+    const pastForecast = this.generateHoltWintersPastForecast(data, {
+      level,
+      trend,
+      seasonal,
+    });
 
     const metrics = this.calculateMetrics(data, "lstm");
 
@@ -518,15 +531,15 @@ export class ForecastingService {
     data: DataPoint[],
     trend: number[],
     seasonal: number[],
-    residual: number[]
+    residual: number[],
   ): {
     dates: string[];
     values: number[];
     confidenceUpper: number[];
     confidenceLower: number[];
   } {
-    const dates = data.map(d => d.date);
-    const values = data.map(d => d.value);
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
     const stdDev = this.calculateStandardDeviation(residual);
 
     const pastForecastValues: number[] = [];
@@ -540,8 +553,12 @@ export class ForecastingService {
 
       // Add some uncertainty for confidence intervals
       const uncertainty = stdDev * 0.8; // Past forecast has less uncertainty
-      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
-      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
     }
 
     return {
@@ -558,15 +575,15 @@ export class ForecastingService {
   private static generateARIMAPastForecast(
     data: DataPoint[],
     params: { ar: number; ma: number },
-    differencedValues: number[]
+    differencedValues: number[],
   ): {
     dates: string[];
     values: number[];
     confidenceUpper: number[];
     confidenceLower: number[];
   } {
-    const dates = data.map(d => d.date);
-    const values = data.map(d => d.value);
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
     const stdDev = this.calculateStandardDeviation(differencedValues);
 
     const pastForecastValues: number[] = [];
@@ -586,8 +603,12 @@ export class ForecastingService {
 
       // Confidence intervals
       const uncertainty = stdDev * 0.8;
-      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
-      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
     }
 
     // Add confidence intervals for first value
@@ -607,15 +628,15 @@ export class ForecastingService {
    */
   private static generateHoltWintersPastForecast(
     data: DataPoint[],
-    components: { level: number[]; trend: number[]; seasonal: number[] }
+    components: { level: number[]; trend: number[]; seasonal: number[] },
   ): {
     dates: string[];
     values: number[];
     confidenceUpper: number[];
     confidenceLower: number[];
   } {
-    const dates = data.map(d => d.date);
-    const values = data.map(d => d.value);
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
     const stdDev = this.calculateStandardDeviation(values);
 
     const pastForecastValues: number[] = [];
@@ -632,8 +653,12 @@ export class ForecastingService {
 
       // Confidence intervals
       const uncertainty = stdDev * 0.1; // Tighter intervals for fitted values
-      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
-      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
     }
 
     return {

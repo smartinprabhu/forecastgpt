@@ -125,29 +125,31 @@ const Index: React.FC = () => {
   const ForecastChart = ({ data }: { data: ForecastData }) => {
     // Prepare data for Recharts - combine all data points by date
     const allDates = new Set([
-      ...data.historical.map(p => p.date),
-      ...data.pastForecast.map(p => p.date),
-      ...data.forecast.map(p => p.date)
+      ...data.historical.map((p) => p.date),
+      ...data.pastForecast.map((p) => p.date),
+      ...data.forecast.map((p) => p.date),
     ]);
 
-    const chartData = Array.from(allDates).sort().map((date) => {
-      const historical = data.historical.find(p => p.date === date);
-      const pastForecast = data.pastForecast.find(p => p.date === date);
-      const forecast = data.forecast.find(p => p.date === date);
+    const chartData = Array.from(allDates)
+      .sort()
+      .map((date) => {
+        const historical = data.historical.find((p) => p.date === date);
+        const pastForecast = data.pastForecast.find((p) => p.date === date);
+        const forecast = data.forecast.find((p) => p.date === date);
 
-      return {
-        date: new Date(date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        }),
-        actual: historical?.value || null,
-        pastForecast: pastForecast?.value || null,
-        forecast: forecast?.value || null,
-        upper: forecast?.upper || null,
-        lower: forecast?.lower || null,
-        type: historical ? "historical" : forecast ? "forecast" : "past",
-      };
-    });
+        return {
+          date: new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          actual: historical?.value || null,
+          pastForecast: pastForecast?.value || null,
+          forecast: forecast?.value || null,
+          upper: forecast?.upper || null,
+          lower: forecast?.lower || null,
+          type: historical ? "historical" : forecast ? "forecast" : "past",
+        };
+      });
 
     return (
       <Card className="mt-4 bg-gradient-to-br from-slate-50 to-blue-50 border-blue-200">
@@ -457,7 +459,6 @@ const Index: React.FC = () => {
 
     return { shouldGenerateForecast: false };
   };
-
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
