@@ -56,6 +56,7 @@ export class ForecastingService {
   private static prophetForecast(
     data: DataPoint[],
     periods: number,
+    frequency: "M" | "W-MON" = "W-MON",
   ): ForecastResult {
     const values = data.map((d) => d.value);
     const dates = data.map((d) => d.date);
@@ -79,9 +80,19 @@ export class ForecastingService {
     const stdDev = this.calculateStandardDeviation(residual);
 
     for (let i = 0; i < periods; i++) {
-      // Generate future date
+      // Generate future date based on frequency
       const futureDate = new Date(lastDate);
-      futureDate.setMonth(futureDate.getMonth() + i + 1);
+      if (frequency === "W-MON") {
+        // Add weeks and ensure it's a Monday
+        futureDate.setDate(futureDate.getDate() + (i + 1) * 7);
+        const dayOfWeek = futureDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysToMonday > 0) {
+          futureDate.setDate(futureDate.getDate() + daysToMonday);
+        }
+      } else {
+        futureDate.setMonth(futureDate.getMonth() + i + 1);
+      }
       forecastDates.push(futureDate.toISOString().split("T")[0]);
 
       // Combine trend and seasonal components
@@ -98,6 +109,9 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast (backfitted) for historical period
+    const pastForecast = this.generatePastForecast(data, trend, seasonal, residual);
+
     // Calculate metrics using holdout validation
     const metrics = this.calculateMetrics(data, "prophet");
 
@@ -106,6 +120,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
