@@ -330,7 +330,7 @@ const Index: React.FC = () => {
     try {
       const forecastRequest: ForecastRequest = {
         lob,
-        months: periods,
+        weeks: periods,
         model: model as "arima" | "prophet" | "lstm",
       };
 
