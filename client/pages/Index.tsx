@@ -466,44 +466,6 @@ const Index: React.FC = () => {
     return { shouldGenerateForecast: false };
   };
 
-  const handleGenerateForecast = async () => {
-    if (!selectedLOB) return;
-
-    setIsLoading(true);
-    try {
-      const forecast = await generateForecastFromAPI(
-        selectedLOB,
-        selectedModel,
-        forecastPeriods,
-      );
-      if (forecast) {
-        setCurrentForecast(forecast);
-
-        const forecastMessage: Message = {
-          id: Date.now().toString(),
-          type: "bot",
-          content: `📈 **Forecast Generated Successfully**\n\nI've generated a ${selectedModel.toUpperCase()} forecast for **${selectedLOB}** for the next ${forecastPeriods} months.\n\n**Model Performance:**\n• MAPE: ${forecast.metrics.mape.toFixed(2)}%\n• RMSE: ${forecast.metrics.rmse.toFixed(0)}\n• MAE: ${forecast.metrics.mae.toFixed(0)}\n\nThe chart below shows the historical data (green line) and forecast predictions (blue dashed line) with confidence intervals (shaded area).`,
-          timestamp: new Date(),
-          forecast,
-        };
-
-        setMessages((prev) => [...prev, forecastMessage]);
-      }
-    } catch (error) {
-      console.error("Forecast generation error:", error);
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: "bot",
-        content:
-          "❌ **Forecast Generation Failed**\n\nI encountered an error while generating the forecast. This could be due to:\n\n• Invalid or missing data for the selected LOB\n• Server connectivity issues\n• Data processing errors\n\nPlease try again or select a different LOB.",
-        timestamp: new Date(),
-        isError: true,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
