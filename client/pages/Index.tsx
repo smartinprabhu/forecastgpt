@@ -54,6 +54,12 @@ interface ForecastData {
   lob: string;
   model: string;
   historical: Array<{ date: string; value: number }>;
+  pastForecast: Array<{
+    date: string;
+    value: number;
+    upper: number;
+    lower: number;
+  }>;
   forecast: Array<{
     date: string;
     value: number;
