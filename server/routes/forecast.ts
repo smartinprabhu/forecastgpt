@@ -5,12 +5,12 @@ import { ForecastingService } from "../services/forecastingService";
 
 export const handleForecast: RequestHandler = async (req, res) => {
   try {
-    const { lob, months, model = "prophet" }: ForecastRequest = req.body;
+    const { lob, weeks, model = "prophet" }: ForecastRequest = req.body;
 
-    if (!lob || !months) {
+    if (!lob || !weeks) {
       return res.status(400).json({
         success: false,
-        message: "Missing required parameters: lob and months",
+        message: "Missing required parameters: lob and weeks",
       });
     }
 
