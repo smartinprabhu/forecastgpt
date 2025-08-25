@@ -67,7 +67,7 @@ const Index: React.FC = () => {
       id: "1",
       type: "bot",
       content:
-        '👋 Hello! I\'m **ForecastGPT**, your AI-powered time series forecasting assistant.\n\nI can help you with:\n• **Generate forecasts** for any Line of Business using real historical data\n• **Analyze trends** and patterns from your Excel data\n• **Explain concepts** about forecasting and data analysis\n• **Answer questions** about your business data\n• **Provide summaries** and insights\n\nI have access to real historical data from your Excel file.\n\n💡 **Tip**: Try asking "Give me a data summary" or "What LOBs are available?" to see what data I have access to.\n\nWhat would you like to explore?',
+        '👋 Hello! I\'m **ForecastGPT**, your AI-powered time series forecasting assistant.\n\nI can help you with:\n• **Generate forecasts** through chat commands like "Generate forecast for Case Type 1 using Prophet for 12 weeks"\n• **Analyze trends** and patterns from your Excel data\n• **Explain concepts** about forecasting and data analysis\n• **Answer questions** about your business data\n• **Provide summaries** and insights\n\nI have access to real historical data from your Excel file and support ARIMA, Prophet, and LSTM models.\n\n💡 **Examples**: \n• "Create ARIMA forecast for Chat Support"\n• "Generate Prophet forecast for Case Type 2 for 24 weeks"\n• "What LOBs are available for forecasting?"\n\nWhat would you like to explore?',
       timestamp: new Date(),
     },
   ]);
