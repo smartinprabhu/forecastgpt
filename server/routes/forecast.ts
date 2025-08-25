@@ -62,6 +62,12 @@ export const handleForecast: RequestHandler = async (req, res) => {
         dates: historicalDates,
         values: historicalValues,
       },
+      pastForecast: {
+        dates: forecastResult.pastForecast.dates,
+        values: forecastResult.pastForecast.values,
+        confidenceUpper: forecastResult.pastForecast.confidenceUpper,
+        confidenceLower: forecastResult.pastForecast.confidenceLower,
+      },
       forecast: {
         dates: forecastResult.dates,
         values: forecastResult.values,
