@@ -136,31 +136,31 @@ const Index: React.FC = () => {
   };
 
   const ForecastChart = ({ data }: { data: ForecastData }) => {
-    // Prepare data for Recharts
-    const chartData = [
-      ...data.historical.map((point) => ({
-        date: new Date(point.date).toLocaleDateString("en-US", {
+    // Prepare data for Recharts - combine all data points by date
+    const allDates = new Set([
+      ...data.historical.map(p => p.date),
+      ...data.pastForecast.map(p => p.date),
+      ...data.forecast.map(p => p.date)
+    ]);
+
+    const chartData = Array.from(allDates).sort().map((date) => {
+      const historical = data.historical.find(p => p.date === date);
+      const pastForecast = data.pastForecast.find(p => p.date === date);
+      const forecast = data.forecast.find(p => p.date === date);
+
+      return {
+        date: new Date(date).toLocaleDateString("en-US", {
           month: "short",
-          year: "2-digit",
+          day: "numeric",
         }),
-        historical: point.value,
-        forecast: null,
-        upper: null,
-        lower: null,
-        type: "historical",
-      })),
-      ...data.forecast.map((point) => ({
-        date: new Date(point.date).toLocaleDateString("en-US", {
-          month: "short",
-          year: "2-digit",
-        }),
-        historical: null,
-        forecast: point.value,
-        upper: point.upper,
-        lower: point.lower,
-        type: "forecast",
-      })),
-    ];
+        actual: historical?.value || null,
+        pastForecast: pastForecast?.value || null,
+        forecast: forecast?.value || null,
+        upper: forecast?.upper || null,
+        lower: forecast?.lower || null,
+        type: historical ? "historical" : forecast ? "forecast" : "past",
+      };
+    });
 
     return (
       <Card className="mt-4 bg-gradient-to-br from-slate-50 to-blue-50 border-blue-200">
