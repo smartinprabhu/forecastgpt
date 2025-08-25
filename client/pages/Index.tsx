@@ -205,13 +205,15 @@ const Index: React.FC = () => {
                   }}
                   formatter={(value: any, name: string) => [
                     value ? value.toLocaleString() : "N/A",
-                    name === "historical"
-                      ? "Historical"
-                      : name === "forecast"
-                        ? "Forecast"
-                        : name === "upper"
-                          ? "Upper Bound"
-                          : "Lower Bound",
+                    name === "actual"
+                      ? "Actual"
+                      : name === "pastForecast"
+                        ? "Past Forecast"
+                        : name === "forecast"
+                          ? "Future Forecast"
+                          : name === "upper"
+                            ? "Upper Bound"
+                            : "Lower Bound",
                   ]}
                 />
                 <Legend />
