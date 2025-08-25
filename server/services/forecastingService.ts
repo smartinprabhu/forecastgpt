@@ -512,6 +512,139 @@ export class ForecastingService {
   }
 
   /**
+   * Generate past forecast (backfitted) for Prophet model
+   */
+  private static generatePastForecast(
+    data: DataPoint[],
+    trend: number[],
+    seasonal: number[],
+    residual: number[]
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map(d => d.date);
+    const values = data.map(d => d.value);
+    const stdDev = this.calculateStandardDeviation(residual);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Combine trend and seasonal components for backfitted forecast
+      const forecastValue = trend[i] + seasonal[i];
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Add some uncertainty for confidence intervals
+      const uncertainty = stdDev * 0.8; // Past forecast has less uncertainty
+      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
+      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+    }
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
+  }
+
+  /**
+   * Generate past forecast (backfitted) for ARIMA model
+   */
+  private static generateARIMAPastForecast(
+    data: DataPoint[],
+    params: { ar: number; ma: number },
+    differencedValues: number[]
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map(d => d.date);
+    const values = data.map(d => d.value);
+    const stdDev = this.calculateStandardDeviation(differencedValues);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    // First value is the actual first value
+    pastForecastValues.push(values[0]);
+
+    for (let i = 1; i < data.length; i++) {
+      // ARIMA backfit
+      const arComponent = params.ar * values[i - 1];
+      const maComponent = params.ma * (differencedValues[i - 1] || 0);
+      const forecastValue = values[i - 1] + arComponent + maComponent;
+
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Confidence intervals
+      const uncertainty = stdDev * 0.8;
+      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
+      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+    }
+
+    // Add confidence intervals for first value
+    confidenceUpper.unshift(values[0]);
+    confidenceLower.unshift(values[0]);
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
+  }
+
+  /**
+   * Generate past forecast (backfitted) for Holt-Winters/LSTM model
+   */
+  private static generateHoltWintersPastForecast(
+    data: DataPoint[],
+    components: { level: number[]; trend: number[]; seasonal: number[] }
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map(d => d.date);
+    const values = data.map(d => d.value);
+    const stdDev = this.calculateStandardDeviation(values);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Holt-Winters backfit
+      const seasonalIndex = i % components.seasonal.length;
+      const seasonalComponent = components.seasonal[seasonalIndex] || 1;
+      const forecastValue = components.level[i] * seasonalComponent;
+
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Confidence intervals
+      const uncertainty = stdDev * 0.1; // Tighter intervals for fitted values
+      confidenceUpper.push(Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)));
+      confidenceLower.push(Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)));
+    }
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
+  }
+
+  /**
    * Calculate forecast accuracy metrics
    */
   private static calculateMetrics(
