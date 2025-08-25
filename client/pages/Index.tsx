@@ -84,7 +84,7 @@ const Index: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<
     "arima" | "prophet" | "lstm"
   >("prophet");
-  const [forecastPeriods, setForecastPeriods] = useState<number>(6);
+  const [forecastPeriods, setForecastPeriods] = useState<number>(12);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
