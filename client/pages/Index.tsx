@@ -562,9 +562,9 @@ const Index: React.FC = () => {
   }, []);
 
   const suggestedPrompts = [
+    "Generate forecast for Case Type 1 using Prophet for 12 weeks",
+    "Create ARIMA forecast for Chat Support",
     "Give me a data summary",
-    "What trends are you seeing in the data?",
-    "Explain the Prophet forecasting model",
     "What LOBs are available for forecasting?",
   ];
 
