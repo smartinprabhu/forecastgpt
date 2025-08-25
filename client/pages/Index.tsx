@@ -302,13 +302,19 @@ const Index: React.FC = () => {
               <h4 className="font-medium text-slate-700">Data Points</h4>
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Historical:</span>
+                  <span className="text-slate-500">Actual:</span>
                   <span className="font-semibold text-slate-700">
                     {data.historical.length}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Forecast:</span>
+                  <span className="text-slate-500">Past Forecast:</span>
+                  <span className="font-semibold text-slate-700">
+                    {data.pastForecast.length}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Future Forecast:</span>
                   <span className="font-semibold text-slate-700">
                     {data.forecast.length}
                   </span>
