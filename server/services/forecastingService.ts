@@ -202,6 +202,7 @@ export class ForecastingService {
   private static lstmForecast(
     data: DataPoint[],
     periods: number,
+    frequency: "M" | "W-MON" = "W-MON",
   ): ForecastResult {
     const values = data.map((d) => d.value);
     const dates = data.map((d) => d.date);
