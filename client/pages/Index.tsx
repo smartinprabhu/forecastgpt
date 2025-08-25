@@ -86,11 +86,6 @@ const Index: React.FC = () => {
     null,
   );
   const [availableLOBs, setAvailableLOBs] = useState<string[]>([]);
-  const [selectedLOB, setSelectedLOB] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<
-    "arima" | "prophet" | "lstm"
-  >("prophet");
-  const [forecastPeriods, setForecastPeriods] = useState<number>(12);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
