@@ -234,18 +234,29 @@ const Index: React.FC = () => {
                   connectNulls={false}
                 />
 
-                {/* Historical line */}
+                {/* Actual data line */}
                 <Line
                   type="monotone"
-                  dataKey="historical"
-                  stroke="#10b981"
+                  dataKey="actual"
+                  stroke="#1f2937"
                   strokeWidth={3}
-                  dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "#1f2937", strokeWidth: 2, r: 4 }}
                   connectNulls={false}
-                  name="Historical Data"
+                  name="Actual"
                 />
 
-                {/* Forecast line */}
+                {/* Past Forecast line */}
+                <Line
+                  type="monotone"
+                  dataKey="pastForecast"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ fill: "#3b82f6", strokeWidth: 1, r: 3 }}
+                  connectNulls={false}
+                  name="Past Forecast"
+                />
+
+                {/* Future Forecast line */}
                 <Line
                   type="monotone"
                   dataKey="forecast"
@@ -254,7 +265,7 @@ const Index: React.FC = () => {
                   strokeDasharray="8 4"
                   dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
                   connectNulls={false}
-                  name="Forecast"
+                  name="Future Forecast"
                 />
               </AreaChart>
             </ResponsiveContainer>
