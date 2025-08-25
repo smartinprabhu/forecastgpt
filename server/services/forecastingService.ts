@@ -5,6 +5,12 @@ export interface ForecastResult {
   values: number[];
   confidenceUpper: number[];
   confidenceLower: number[];
+  pastForecast: {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  };
   metrics: {
     mape: number;
     rmse: number;
@@ -20,6 +26,7 @@ export class ForecastingService {
     historicalData: DataPoint[],
     periods: number,
     model: "arima" | "prophet" | "lstm" = "prophet",
+    frequency: "M" | "W-MON" = "W-MON",
   ): Promise<ForecastResult> {
     if (!historicalData || historicalData.length === 0) {
       throw new Error("No historical data provided");
@@ -32,13 +39,13 @@ export class ForecastingService {
 
     switch (model) {
       case "prophet":
-        return this.prophetForecast(sortedData, periods);
+        return this.prophetForecast(sortedData, periods, frequency);
       case "arima":
-        return this.arimaForecast(sortedData, periods);
+        return this.arimaForecast(sortedData, periods, frequency);
       case "lstm":
-        return this.lstmForecast(sortedData, periods);
+        return this.lstmForecast(sortedData, periods, frequency);
       default:
-        return this.prophetForecast(sortedData, periods);
+        return this.prophetForecast(sortedData, periods, frequency);
     }
   }
 
