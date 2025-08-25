@@ -5,12 +5,12 @@ import { ForecastingService } from "../services/forecastingService";
 
 export const handleForecast: RequestHandler = async (req, res) => {
   try {
-    const { lob, months, model = "prophet" }: ForecastRequest = req.body;
+    const { lob, weeks, model = "prophet" }: ForecastRequest = req.body;
 
-    if (!lob || !months) {
+    if (!lob || !weeks) {
       return res.status(400).json({
         success: false,
-        message: "Missing required parameters: lob and months",
+        message: "Missing required parameters: lob and weeks",
       });
     }
 
@@ -37,14 +37,15 @@ export const handleForecast: RequestHandler = async (req, res) => {
     }
 
     console.log(
-      `Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points`,
+      `Generating ${model} forecast for ${lob} with ${historicalData.length} historical data points for ${weeks} weeks`,
     );
 
-    // Generate forecast using the specified model
+    // Generate forecast using the specified model with weekly frequency
     const forecastResult = await ForecastingService.generateForecast(
       historicalData,
-      months,
+      weeks,
       model,
+      "W-MON",
     );
 
     // Prepare response
@@ -54,12 +55,18 @@ export const handleForecast: RequestHandler = async (req, res) => {
     const response: ForecastResponse = {
       success: true,
       lob,
-      forecastPeriod: months,
+      forecastPeriod: weeks,
       model,
       dates: [...historicalDates, ...forecastResult.dates],
       historical: {
         dates: historicalDates,
         values: historicalValues,
+      },
+      pastForecast: {
+        dates: forecastResult.pastForecast.dates,
+        values: forecastResult.pastForecast.values,
+        confidenceUpper: forecastResult.pastForecast.confidenceUpper,
+        confidenceLower: forecastResult.pastForecast.confidenceLower,
       },
       forecast: {
         dates: forecastResult.dates,

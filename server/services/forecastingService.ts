@@ -5,6 +5,12 @@ export interface ForecastResult {
   values: number[];
   confidenceUpper: number[];
   confidenceLower: number[];
+  pastForecast: {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  };
   metrics: {
     mape: number;
     rmse: number;
@@ -20,6 +26,7 @@ export class ForecastingService {
     historicalData: DataPoint[],
     periods: number,
     model: "arima" | "prophet" | "lstm" = "prophet",
+    frequency: "M" | "W-MON" = "W-MON",
   ): Promise<ForecastResult> {
     if (!historicalData || historicalData.length === 0) {
       throw new Error("No historical data provided");
@@ -32,13 +39,13 @@ export class ForecastingService {
 
     switch (model) {
       case "prophet":
-        return this.prophetForecast(sortedData, periods);
+        return this.prophetForecast(sortedData, periods, frequency);
       case "arima":
-        return this.arimaForecast(sortedData, periods);
+        return this.arimaForecast(sortedData, periods, frequency);
       case "lstm":
-        return this.lstmForecast(sortedData, periods);
+        return this.lstmForecast(sortedData, periods, frequency);
       default:
-        return this.prophetForecast(sortedData, periods);
+        return this.prophetForecast(sortedData, periods, frequency);
     }
   }
 
@@ -49,6 +56,7 @@ export class ForecastingService {
   private static prophetForecast(
     data: DataPoint[],
     periods: number,
+    frequency: "M" | "W-MON" = "W-MON",
   ): ForecastResult {
     const values = data.map((d) => d.value);
     const dates = data.map((d) => d.date);
@@ -72,9 +80,19 @@ export class ForecastingService {
     const stdDev = this.calculateStandardDeviation(residual);
 
     for (let i = 0; i < periods; i++) {
-      // Generate future date
+      // Generate future date based on frequency
       const futureDate = new Date(lastDate);
-      futureDate.setMonth(futureDate.getMonth() + i + 1);
+      if (frequency === "W-MON") {
+        // Add weeks and ensure it's a Monday
+        futureDate.setDate(futureDate.getDate() + (i + 1) * 7);
+        const dayOfWeek = futureDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysToMonday > 0) {
+          futureDate.setDate(futureDate.getDate() + daysToMonday);
+        }
+      } else {
+        futureDate.setMonth(futureDate.getMonth() + i + 1);
+      }
       forecastDates.push(futureDate.toISOString().split("T")[0]);
 
       // Combine trend and seasonal components
@@ -91,6 +109,14 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast (backfitted) for historical period
+    const pastForecast = this.generatePastForecast(
+      data,
+      trend,
+      seasonal,
+      residual,
+    );
+
     // Calculate metrics using holdout validation
     const metrics = this.calculateMetrics(data, "prophet");
 
@@ -99,6 +125,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
@@ -110,6 +137,7 @@ export class ForecastingService {
   private static arimaForecast(
     data: DataPoint[],
     periods: number,
+    frequency: "M" | "W-MON" = "W-MON",
   ): ForecastResult {
     const values = data.map((d) => d.value);
     const dates = data.map((d) => d.date);
@@ -131,7 +159,16 @@ export class ForecastingService {
 
     for (let i = 0; i < periods; i++) {
       const futureDate = new Date(lastDate);
-      futureDate.setMonth(futureDate.getMonth() + i + 1);
+      if (frequency === "W-MON") {
+        futureDate.setDate(futureDate.getDate() + (i + 1) * 7);
+        const dayOfWeek = futureDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysToMonday > 0) {
+          futureDate.setDate(futureDate.getDate() + daysToMonday);
+        }
+      } else {
+        futureDate.setMonth(futureDate.getMonth() + i + 1);
+      }
       forecastDates.push(futureDate.toISOString().split("T")[0]);
 
       // ARIMA forecast
@@ -152,6 +189,13 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast using ARIMA model
+    const pastForecast = this.generateARIMAPastForecast(
+      data,
+      { ar, ma },
+      differencedValues,
+    );
+
     const metrics = this.calculateMetrics(data, "arima");
 
     return {
@@ -159,6 +203,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
@@ -170,6 +215,7 @@ export class ForecastingService {
   private static lstmForecast(
     data: DataPoint[],
     periods: number,
+    frequency: "M" | "W-MON" = "W-MON",
   ): ForecastResult {
     const values = data.map((d) => d.value);
     const dates = data.map((d) => d.date);
@@ -200,7 +246,16 @@ export class ForecastingService {
 
     for (let i = 0; i < periods; i++) {
       const futureDate = new Date(lastDate);
-      futureDate.setMonth(futureDate.getMonth() + i + 1);
+      if (frequency === "W-MON") {
+        futureDate.setDate(futureDate.getDate() + (i + 1) * 7);
+        const dayOfWeek = futureDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysToMonday > 0) {
+          futureDate.setDate(futureDate.getDate() + daysToMonday);
+        }
+      } else {
+        futureDate.setMonth(futureDate.getMonth() + i + 1);
+      }
       forecastDates.push(futureDate.toISOString().split("T")[0]);
 
       // Holt-Winters forecast
@@ -221,6 +276,13 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast using Holt-Winters model
+    const pastForecast = this.generateHoltWintersPastForecast(data, {
+      level,
+      trend,
+      seasonal,
+    });
+
     const metrics = this.calculateMetrics(data, "lstm");
 
     return {
@@ -228,6 +290,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
@@ -459,6 +522,151 @@ export class ForecastingService {
     const variance =
       values.reduce((sum, val) => sum + (val - mean) ** 2, 0) / values.length;
     return Math.sqrt(variance);
+  }
+
+  /**
+   * Generate past forecast (backfitted) for Prophet model
+   */
+  private static generatePastForecast(
+    data: DataPoint[],
+    trend: number[],
+    seasonal: number[],
+    residual: number[],
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
+    const stdDev = this.calculateStandardDeviation(residual);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Combine trend and seasonal components for backfitted forecast
+      const forecastValue = trend[i] + seasonal[i];
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Add some uncertainty for confidence intervals
+      const uncertainty = stdDev * 0.8; // Past forecast has less uncertainty
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
+    }
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
+  }
+
+  /**
+   * Generate past forecast (backfitted) for ARIMA model
+   */
+  private static generateARIMAPastForecast(
+    data: DataPoint[],
+    params: { ar: number; ma: number },
+    differencedValues: number[],
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
+    const stdDev = this.calculateStandardDeviation(differencedValues);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    // First value is the actual first value
+    pastForecastValues.push(values[0]);
+
+    for (let i = 1; i < data.length; i++) {
+      // ARIMA backfit
+      const arComponent = params.ar * values[i - 1];
+      const maComponent = params.ma * (differencedValues[i - 1] || 0);
+      const forecastValue = values[i - 1] + arComponent + maComponent;
+
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Confidence intervals
+      const uncertainty = stdDev * 0.8;
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
+    }
+
+    // Add confidence intervals for first value
+    confidenceUpper.unshift(values[0]);
+    confidenceLower.unshift(values[0]);
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
+  }
+
+  /**
+   * Generate past forecast (backfitted) for Holt-Winters/LSTM model
+   */
+  private static generateHoltWintersPastForecast(
+    data: DataPoint[],
+    components: { level: number[]; trend: number[]; seasonal: number[] },
+  ): {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  } {
+    const dates = data.map((d) => d.date);
+    const values = data.map((d) => d.value);
+    const stdDev = this.calculateStandardDeviation(values);
+
+    const pastForecastValues: number[] = [];
+    const confidenceUpper: number[] = [];
+    const confidenceLower: number[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      // Holt-Winters backfit
+      const seasonalIndex = i % components.seasonal.length;
+      const seasonalComponent = components.seasonal[seasonalIndex] || 1;
+      const forecastValue = components.level[i] * seasonalComponent;
+
+      pastForecastValues.push(Math.max(0, Math.round(forecastValue)));
+
+      // Confidence intervals
+      const uncertainty = stdDev * 0.1; // Tighter intervals for fitted values
+      confidenceUpper.push(
+        Math.max(0, Math.round(forecastValue + 1.96 * uncertainty)),
+      );
+      confidenceLower.push(
+        Math.max(0, Math.round(forecastValue - 1.96 * uncertainty)),
+      );
+    }
+
+    return {
+      dates,
+      values: pastForecastValues,
+      confidenceUpper,
+      confidenceLower,
+    };
   }
 
   /**

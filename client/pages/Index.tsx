@@ -5,18 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Send,
   TrendingUp,
   Bot,
   User,
-  Target,
   Sparkles,
   AlertCircle,
   BarChart3,
@@ -54,6 +46,12 @@ interface ForecastData {
   lob: string;
   model: string;
   historical: Array<{ date: string; value: number }>;
+  pastForecast: Array<{
+    date: string;
+    value: number;
+    upper: number;
+    lower: number;
+  }>;
   forecast: Array<{
     date: string;
     value: number;
@@ -69,7 +67,7 @@ const Index: React.FC = () => {
       id: "1",
       type: "bot",
       content:
-        '👋 Hello! I\'m **ForecastGPT**, your AI-powered time series forecasting assistant.\n\nI can help you with:\n• **Generate forecasts** for any Line of Business using real historical data\n• **Analyze trends** and patterns from your Excel data\n• **Explain concepts** about forecasting and data analysis\n• **Answer questions** about your business data\n• **Provide summaries** and insights\n\nI have access to real historical data from your Excel file.\n\n💡 **Tip**: Try asking "Give me a data summary" or "What LOBs are available?" to see what data I have access to.\n\nWhat would you like to explore?',
+        '👋 Hello! I\'m **ForecastGPT**, your AI-powered time series forecasting assistant.\n\nI can help you with:\n• **Generate forecasts** through chat commands like "Generate forecast for Case Type 1 using Prophet for 12 weeks"\n• **Analyze trends** and patterns from your Excel data\n• **Explain concepts** about forecasting and data analysis\n• **Answer questions** about your business data\n• **Provide summaries** and insights\n\nI have access to real historical data from your Excel file and support ARIMA, Prophet, and LSTM models.\n\n💡 **Examples**: \n• "Create ARIMA forecast for Chat Support"\n• "Generate Prophet forecast for Case Type 2 for 24 weeks"\n• "What LOBs are available for forecasting?"\n\nWhat would you like to explore?',
       timestamp: new Date(),
     },
   ]);
@@ -80,11 +78,6 @@ const Index: React.FC = () => {
     null,
   );
   const [availableLOBs, setAvailableLOBs] = useState<string[]>([]);
-  const [selectedLOB, setSelectedLOB] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<
-    "arima" | "prophet" | "lstm"
-  >("prophet");
-  const [forecastPeriods, setForecastPeriods] = useState<number>(6);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,31 +123,33 @@ const Index: React.FC = () => {
   };
 
   const ForecastChart = ({ data }: { data: ForecastData }) => {
-    // Prepare data for Recharts
-    const chartData = [
-      ...data.historical.map((point) => ({
-        date: new Date(point.date).toLocaleDateString("en-US", {
-          month: "short",
-          year: "2-digit",
-        }),
-        historical: point.value,
-        forecast: null,
-        upper: null,
-        lower: null,
-        type: "historical",
-      })),
-      ...data.forecast.map((point) => ({
-        date: new Date(point.date).toLocaleDateString("en-US", {
-          month: "short",
-          year: "2-digit",
-        }),
-        historical: null,
-        forecast: point.value,
-        upper: point.upper,
-        lower: point.lower,
-        type: "forecast",
-      })),
-    ];
+    // Prepare data for Recharts - combine all data points by date
+    const allDates = new Set([
+      ...data.historical.map((p) => p.date),
+      ...data.pastForecast.map((p) => p.date),
+      ...data.forecast.map((p) => p.date),
+    ]);
+
+    const chartData = Array.from(allDates)
+      .sort()
+      .map((date) => {
+        const historical = data.historical.find((p) => p.date === date);
+        const pastForecast = data.pastForecast.find((p) => p.date === date);
+        const forecast = data.forecast.find((p) => p.date === date);
+
+        return {
+          date: new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          actual: historical?.value || null,
+          pastForecast: pastForecast?.value || null,
+          forecast: forecast?.value || null,
+          upper: forecast?.upper || null,
+          lower: forecast?.lower || null,
+          type: historical ? "historical" : forecast ? "forecast" : "past",
+        };
+      });
 
     return (
       <Card className="mt-4 bg-gradient-to-br from-slate-50 to-blue-50 border-blue-200">
@@ -199,13 +194,15 @@ const Index: React.FC = () => {
                   }}
                   formatter={(value: any, name: string) => [
                     value ? value.toLocaleString() : "N/A",
-                    name === "historical"
-                      ? "Historical"
-                      : name === "forecast"
-                        ? "Forecast"
-                        : name === "upper"
-                          ? "Upper Bound"
-                          : "Lower Bound",
+                    name === "actual"
+                      ? "Actual"
+                      : name === "pastForecast"
+                        ? "Past Forecast"
+                        : name === "forecast"
+                          ? "Future Forecast"
+                          : name === "upper"
+                            ? "Upper Bound"
+                            : "Lower Bound",
                   ]}
                 />
                 <Legend />
@@ -228,18 +225,29 @@ const Index: React.FC = () => {
                   connectNulls={false}
                 />
 
-                {/* Historical line */}
+                {/* Actual data line */}
                 <Line
                   type="monotone"
-                  dataKey="historical"
-                  stroke="#10b981"
+                  dataKey="actual"
+                  stroke="#1f2937"
                   strokeWidth={3}
-                  dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "#1f2937", strokeWidth: 2, r: 4 }}
                   connectNulls={false}
-                  name="Historical Data"
+                  name="Actual"
                 />
 
-                {/* Forecast line */}
+                {/* Past Forecast line */}
+                <Line
+                  type="monotone"
+                  dataKey="pastForecast"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ fill: "#3b82f6", strokeWidth: 1, r: 3 }}
+                  connectNulls={false}
+                  name="Past Forecast"
+                />
+
+                {/* Future Forecast line */}
                 <Line
                   type="monotone"
                   dataKey="forecast"
@@ -248,7 +256,7 @@ const Index: React.FC = () => {
                   strokeDasharray="8 4"
                   dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
                   connectNulls={false}
-                  name="Forecast"
+                  name="Future Forecast"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -283,13 +291,19 @@ const Index: React.FC = () => {
               <h4 className="font-medium text-slate-700">Data Points</h4>
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Historical:</span>
+                  <span className="text-slate-500">Actual:</span>
                   <span className="font-semibold text-slate-700">
                     {data.historical.length}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Forecast:</span>
+                  <span className="text-slate-500">Past Forecast:</span>
+                  <span className="font-semibold text-slate-700">
+                    {data.pastForecast.length}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Future Forecast:</span>
                   <span className="font-semibold text-slate-700">
                     {data.forecast.length}
                   </span>
@@ -330,7 +344,7 @@ const Index: React.FC = () => {
     try {
       const forecastRequest: ForecastRequest = {
         lob,
-        months: periods,
+        weeks: periods,
         model: model as "arima" | "prophet" | "lstm",
       };
 
@@ -358,6 +372,12 @@ const Index: React.FC = () => {
         historical: data.historical.dates.map((date, i) => ({
           date,
           value: data.historical.values[i],
+        })),
+        pastForecast: data.pastForecast.dates.map((date, i) => ({
+          date,
+          value: data.pastForecast.values[i],
+          upper: data.pastForecast.confidenceUpper[i],
+          lower: data.pastForecast.confidenceLower[i],
         })),
         forecast: data.forecast.dates.map((date, i) => ({
           date,
@@ -440,45 +460,6 @@ const Index: React.FC = () => {
     return { shouldGenerateForecast: false };
   };
 
-  const handleGenerateForecast = async () => {
-    if (!selectedLOB) return;
-
-    setIsLoading(true);
-    try {
-      const forecast = await generateForecastFromAPI(
-        selectedLOB,
-        selectedModel,
-        forecastPeriods,
-      );
-      if (forecast) {
-        setCurrentForecast(forecast);
-
-        const forecastMessage: Message = {
-          id: Date.now().toString(),
-          type: "bot",
-          content: `📈 **Forecast Generated Successfully**\n\nI've generated a ${selectedModel.toUpperCase()} forecast for **${selectedLOB}** for the next ${forecastPeriods} months.\n\n**Model Performance:**\n• MAPE: ${forecast.metrics.mape.toFixed(2)}%\n• RMSE: ${forecast.metrics.rmse.toFixed(0)}\n• MAE: ${forecast.metrics.mae.toFixed(0)}\n\nThe chart below shows the historical data (green line) and forecast predictions (blue dashed line) with confidence intervals (shaded area).`,
-          timestamp: new Date(),
-          forecast,
-        };
-
-        setMessages((prev) => [...prev, forecastMessage]);
-      }
-    } catch (error) {
-      console.error("Forecast generation error:", error);
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: "bot",
-        content:
-          "❌ **Forecast Generation Failed**\n\nI encountered an error while generating the forecast. This could be due to:\n\n• Invalid or missing data for the selected LOB\n• Server connectivity issues\n• Data processing errors\n\nPlease try again or select a different LOB.",
-        timestamp: new Date(),
-        isError: true,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -508,7 +489,7 @@ const Index: React.FC = () => {
         generatedForecast = await generateForecastFromAPI(
           forecastCheck.lob,
           forecastCheck.model,
-          6, // Default 6 months
+          12, // Default 12 weeks
         );
         if (generatedForecast) {
           setCurrentForecast(generatedForecast);
@@ -574,9 +555,9 @@ const Index: React.FC = () => {
   }, []);
 
   const suggestedPrompts = [
+    "Generate forecast for Case Type 1 using Prophet for 12 weeks",
+    "Create ARIMA forecast for Chat Support",
     "Give me a data summary",
-    "What trends are you seeing in the data?",
-    "Explain the Prophet forecasting model",
     "What LOBs are available for forecasting?",
   ];
 
@@ -608,104 +589,9 @@ const Index: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-4">
-        {/* Forecast Generator Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-24">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Generate Forecast
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Line of Business
-                </label>
-                <Select value={selectedLOB} onValueChange={setSelectedLOB}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select LOB..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableLOBs.map((lob) => (
-                      <SelectItem key={lob} value={lob}>
-                        {lob}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Forecasting Model
-                </label>
-                <Select
-                  value={selectedModel}
-                  onValueChange={(value: "arima" | "prophet" | "lstm") =>
-                    setSelectedModel(value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prophet">
-                      Prophet (Recommended)
-                    </SelectItem>
-                    <SelectItem value="arima">ARIMA</SelectItem>
-                    <SelectItem value="lstm">LSTM (Neural Network)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Forecast Periods (Months)
-                </label>
-                <Select
-                  value={forecastPeriods.toString()}
-                  onValueChange={(value) => setForecastPeriods(parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3 Months</SelectItem>
-                    <SelectItem value="6">6 Months</SelectItem>
-                    <SelectItem value="12">12 Months</SelectItem>
-                    <SelectItem value="24">24 Months</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={handleGenerateForecast}
-                disabled={!selectedLOB || isLoading}
-                className="w-full"
-              >
-                {isLoading ? "Generating..." : "Generate Forecast"}
-              </Button>
-
-              <div className="text-xs text-slate-500 space-y-1">
-                <p>
-                  <strong>Prophet:</strong> Best for business data with
-                  seasonality
-                </p>
-                <p>
-                  <strong>ARIMA:</strong> Statistical model for time series
-                </p>
-                <p>
-                  <strong>LSTM:</strong> Deep learning for complex patterns
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="max-w-6xl mx-auto p-4">
         {/* Chat Container */}
-        <div className="lg:col-span-2">
+        <div>
           <div className="h-[calc(100vh-10rem)] flex flex-col">
             {/* Messages */}
             <ScrollArea className="flex-1">

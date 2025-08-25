@@ -11,7 +11,7 @@ export interface FileUploadResponse {
 
 export interface ForecastRequest {
   lob: string;
-  months: number;
+  weeks: number;
   model?: "arima" | "prophet" | "lstm";
 }
 
@@ -24,6 +24,12 @@ export interface ForecastResponse {
   historical: {
     dates: string[];
     values: number[];
+  };
+  pastForecast: {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
   };
   forecast: {
     dates: string[];
