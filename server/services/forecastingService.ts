@@ -184,6 +184,9 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast using ARIMA model
+    const pastForecast = this.generateARIMAPastForecast(data, { ar, ma }, differencedValues);
+
     const metrics = this.calculateMetrics(data, "arima");
 
     return {
@@ -191,6 +194,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
