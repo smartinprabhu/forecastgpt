@@ -267,6 +267,9 @@ export class ForecastingService {
       );
     }
 
+    // Generate past forecast using Holt-Winters model
+    const pastForecast = this.generateHoltWintersPastForecast(data, { level, trend, seasonal });
+
     const metrics = this.calculateMetrics(data, "lstm");
 
     return {
@@ -274,6 +277,7 @@ export class ForecastingService {
       values: forecastValues,
       confidenceUpper,
       confidenceLower,
+      pastForecast,
       metrics,
     };
   }
