@@ -508,7 +508,7 @@ const Index: React.FC = () => {
         generatedForecast = await generateForecastFromAPI(
           forecastCheck.lob,
           forecastCheck.model,
-          6, // Default 6 months
+          12, // Default 12 weeks
         );
         if (generatedForecast) {
           setCurrentForecast(generatedForecast);
@@ -662,7 +662,7 @@ const Index: React.FC = () => {
 
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Forecast Periods (Months)
+                  Forecast Periods (Weeks)
                 </label>
                 <Select
                   value={forecastPeriods.toString()}
@@ -672,10 +672,10 @@ const Index: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="3">3 Months</SelectItem>
-                    <SelectItem value="6">6 Months</SelectItem>
-                    <SelectItem value="12">12 Months</SelectItem>
-                    <SelectItem value="24">24 Months</SelectItem>
+                    <SelectItem value="4">4 Weeks</SelectItem>
+                    <SelectItem value="8">8 Weeks</SelectItem>
+                    <SelectItem value="12">12 Weeks</SelectItem>
+                    <SelectItem value="24">24 Weeks</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
