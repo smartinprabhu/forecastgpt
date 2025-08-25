@@ -25,6 +25,12 @@ export interface ForecastResponse {
     dates: string[];
     values: number[];
   };
+  pastForecast: {
+    dates: string[];
+    values: number[];
+    confidenceUpper: number[];
+    confidenceLower: number[];
+  };
   forecast: {
     dates: string[];
     values: number[];
