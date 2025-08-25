@@ -233,7 +233,16 @@ export class ForecastingService {
 
     for (let i = 0; i < periods; i++) {
       const futureDate = new Date(lastDate);
-      futureDate.setMonth(futureDate.getMonth() + i + 1);
+      if (frequency === "W-MON") {
+        futureDate.setDate(futureDate.getDate() + (i + 1) * 7);
+        const dayOfWeek = futureDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysToMonday > 0) {
+          futureDate.setDate(futureDate.getDate() + daysToMonday);
+        }
+      } else {
+        futureDate.setMonth(futureDate.getMonth() + i + 1);
+      }
       forecastDates.push(futureDate.toISOString().split("T")[0]);
 
       // Holt-Winters forecast
