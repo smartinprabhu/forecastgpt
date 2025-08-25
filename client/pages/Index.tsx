@@ -365,6 +365,12 @@ const Index: React.FC = () => {
           date,
           value: data.historical.values[i],
         })),
+        pastForecast: data.pastForecast.dates.map((date, i) => ({
+          date,
+          value: data.pastForecast.values[i],
+          upper: data.pastForecast.confidenceUpper[i],
+          lower: data.pastForecast.confidenceLower[i],
+        })),
         forecast: data.forecast.dates.map((date, i) => ({
           date,
           value: data.forecast.values[i],
